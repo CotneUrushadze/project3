@@ -6,6 +6,24 @@ app.secret_key = 'hello'
 app.permanent_session_lifetime = timedelta(minutes=5)
 
 
+@app.route('/registration', methods=['GET', 'POST'])
+def registration():
+    if request.method == 'POST':
+        user = request.form['user']
+        password = request.form['password']
+        session['user'] = user
+        session['password'] = password
+    else:
+        if 'user' in session:
+            return redirect(url_for('home'))
+    return render_template("registration.html")
+
+
+
+
+
+
+
 @app.context_processor
 def inject_user():
     user = session.get('user')
@@ -17,7 +35,7 @@ def tohome():
     if 'user' in session:
         return redirect(url_for('home'))
     else:
-        return redirect(url_for('login'))
+        return redirect(url_for('registration'))
 
 
 @app.route('/login', methods=['GET', 'POST'])

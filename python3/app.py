@@ -1,36 +1,33 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from datetime import timedelta
 import sqlite3
-
+import mysql.connector
+import os
 
 app = Flask(__name__)
 app.secret_key = 'hello'
-app.permanent_session_lifetime = timedelta(minutes=10)
+app.permanent_session_lifetime = timedelta(minutes=1)
 
-conn = sqlite3.connect('database.db')
+DATABASE = 'database.db'
 
-def db_connection(file):
-    return sqlite3.connect(file)
-
-
-def add_user(user_id, username, password):
-    cursor = conn.cursor()
-    query = ('INSERT INTO books (title, author, price) VALUES (?, ?, ?)', (user_id, username, password))
-    cursor.execute(query)
-
-
-
-
-@app.context_processor
-def inject_user():
-    user = session.get('user')
-    return dict(user=user)
+# def db_connection():
+#     conn = sqlite3.connect(DATABASE)
+#     conn.row_factory = sqlite3.Row
+#     return conn
+#
+# def add_user(username, password):
+#     conn = db_connection()
+#     cursor = conn.cursor()
+#     query = 'INSERT INTO users (username, password) VALUES (?, ?)'
+#     cursor.execute(query, (username, password))
+#     conn.commit()
+#     conn.close()
 
 
 @app.route('/')
 def tohome():
     if 'user' in session:
-        return redirect(url_for('home'))
+        return render_template('home.html')
     else:
         return redirect(url_for('login'))
 
@@ -43,37 +40,34 @@ def login():
         session['user'] = user
         session['password'] = password
 
-
-        db_connection('database.db')
-        cursor.execute('INSERT INTO users (user_id, username, password) VALUES (?, ?, ?)',
-                       (1, user, password))
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        query = 'INSERT INTO users (username, password) VALUES (?, ?)'
+        cursor.execute(query, (user, password))
         conn.commit()
-        return redirect(url_for('home'))
+        conn.close()
 
+        # add_user(user, password)
 
-
-
-    else:
-        if 'user' in session:
-            return redirect(url_for('home'))
+        return redirect(url_for('tohome'))
+    # else:
+    #     if 'user' in session:
+    #         return redirect(url_for('tohome'))
     return render_template("login.html")
 
-
-
-
-
-@app.route('/home')
-def home():
-    if 'user' in session:
-        user = session['user']
-        return render_template('home.html')
-    else:
-        return redirect(url_for('login'))
+# @app.route('/home')
+# def home():
+#     if 'user' in session:
+#         user = session['user']
+#         return render_template('home.html')
+#     else:
+#         return redirect(url_for('login'))
 
 
 @app.route('/logout')
 def logout():
     session.pop('user', None)
+    session.pop('password', None)
     return redirect(url_for('login'))
 
 
